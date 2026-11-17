@@ -6,6 +6,7 @@ Usage: python3 audit_submission.py /path/to/CVE-YYYY-NNNN
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -23,6 +24,7 @@ REQUIRED_DIRS = (
     "harbor-runtime-profile/environment",
     "harbor-runtime-profile/tests",
 )
+TIMEOUT_KEY_PATTERN = re.compile(r"^\s*(?:timeout_sec|\"timeout_sec\"|'timeout_sec')\s*=", re.MULTILINE)
 
 
 def report(ok: bool, label: str, detail: str = "") -> bool:
@@ -48,6 +50,16 @@ def audit(root: Path) -> bool:
         exists = (root / relative).is_file()
         results.append(report(exists, relative, "存在" if exists else "缺少文件"))
 
+    task_config = root / "harbor-runtime-profile/task.toml"
+    if task_config.is_file():
+        try:
+            config_text = task_config.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            results.append(report(False, "task.toml timeout_sec", f"读取失败：{exc}"))
+        else:
+            has_timeout = bool(TIMEOUT_KEY_PATTERN.search(config_text))
+            results.append(report(not has_timeout, "task.toml timeout_sec", "发现配置项" if has_timeout else "未发现配置项"))
+
     archives = [path for path in (root / "images").glob("*.tar.gz") if path.is_file()]
     results.append(report(bool(archives), "images/*.tar.gz", f"找到 {len(archives)} 个" if archives else "缺少镜像包"))
 
@@ -67,7 +79,7 @@ def audit(root: Path) -> bool:
     results.append(report(True, "image-lock.json 格式", "有效 JSON 对象"))
 
     task = lock.get("task")
-    results.append(report(nonempty_string(task) and task == root.name, "task", f"应为 {root.name}，实际为 {task!r}"))
+    results.append(report(nonempty_string(task) and task.casefold() == root.name.casefold(), "task", f"应为 {root.name}（忽略大小写），实际为 {task!r}"))
 
     images = lock.get("images")
     valid_images = isinstance(images, list) and bool(images)
