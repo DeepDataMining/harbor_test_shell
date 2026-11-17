@@ -8,7 +8,7 @@
 python3 task1.py <CVE目录>
 ```
 
-检查必需文件和目录、`images/*.tar.gz`，以及 `image-lock.json` 的 `task`、`images`、`role/ref/archive` 字段。若 `task.toml` 中配置了 `timeout_sec`，审计不通过。`environment/assets/` 可选。通过时输出 `审计结果：通过`。
+检查必需文件和目录，以及 `image-lock.json` 的 `task`、`images`、`role/ref/archive` 字段。镜像包可放在任务 `images/` 或同级 `shared-images/`，其路径与文件由 `task2.py` 检查。若 `task.toml` 中配置了 `timeout_sec`，审计不通过。`environment/assets/` 可选。通过时输出 `审计结果：通过`。
 
 ## 2. 镜像包
 

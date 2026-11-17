@@ -19,7 +19,6 @@ REQUIRED_FILES = (
     "harbor-runtime-profile/tests/test.sh",
 )
 REQUIRED_DIRS = (
-    "images",
     "harbor-runtime-profile",
     "harbor-runtime-profile/environment",
     "harbor-runtime-profile/tests",
@@ -59,9 +58,6 @@ def audit(root: Path) -> bool:
         else:
             has_timeout = bool(TIMEOUT_KEY_PATTERN.search(config_text))
             results.append(report(not has_timeout, "task.toml timeout_sec", "发现配置项" if has_timeout else "未发现配置项"))
-
-    archives = [path for path in (root / "images").glob("*.tar.gz") if path.is_file()]
-    results.append(report(bool(archives), "images/*.tar.gz", f"找到 {len(archives)} 个" if archives else "缺少镜像包"))
 
     lock_path = root / "image-lock.json"
     if not lock_path.is_file():
